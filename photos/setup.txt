@@ -1,0 +1,10 @@
+conda create -n photos python=3.11
+conda activate photos
+
+pip install pillow pillow-heif
+pip install piexif
+
+brew install cmake
+pip install dlib
+pip install pip install face_recognition
+pip install mediapipe opencv-python
