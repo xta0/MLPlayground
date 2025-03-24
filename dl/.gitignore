@@ -1,0 +1,3 @@
+F_MNIST_data/
+*.pk
+*.pt
