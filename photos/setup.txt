@@ -8,4 +8,4 @@ brew install cmake
 pip install dlib
 pip install pip install face_recognition
 pip install mediapipe opencv-python
-pip install insightface opencv-python torch torchvision scikit-learn
+pip install opencv-python torch torchvision scikit-learn
