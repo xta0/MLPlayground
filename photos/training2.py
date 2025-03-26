@@ -12,8 +12,8 @@ from torchvision import models, transforms
 from PIL import Image
 
 # === Config ===
-TRAINING_DIR = "/Volumes/dev-1t/photos/data/training"
-MODEL_PATH = "face_classifier_resnet18.pt"
+TRAINING_DIR = "/Volumes/dev-1t/photos/data/training2"
+MODEL_PATH = "face_classifier_mobilenetv3.pt"
 LABELS_PATH = "classes.npy"
 BATCH_SIZE = 32
 EPOCHS = 15
@@ -70,14 +70,15 @@ def main():
     val_loader = DataLoader(FaceDataset(X_val, y_val), batch_size=BATCH_SIZE, shuffle=False)
 
     # === Load Pretrained Model ===
-    model = models.resnet18(pretrained=True)
-    num_features = model.fc.in_features
-    model.fc = nn.Sequential(
+    model = models.mobilenet_v3_small(pretrained=True)
+    num_features = model.classifier[-1].in_features
+    num_classes = num_classes = len(label_encoder.classes_)
+    model.classifier[-1] = nn.Sequential(
         nn.Linear(num_features, 256),
         nn.BatchNorm1d(256),
         nn.ReLU(),
         nn.Dropout(0.3),
-        nn.Linear(256, len(label_encoder.classes_))
+        nn.Linear(256, num_classes),
     )
     model = model.to(DEVICE)
 
