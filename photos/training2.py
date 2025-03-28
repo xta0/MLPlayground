@@ -16,7 +16,7 @@ TRAINING_DIR = "/Volumes/dev-1t/photos/data/training2"
 MODEL_PATH = "face_classifier_mobilenetv3.pt"
 LABELS_PATH = "classes.npy"
 BATCH_SIZE = 32
-EPOCHS = 15
+EPOCHS = 20
 LEARNING_RATE = 1e-4
 PATIENCE = 5  # early stopping patience
 DEVICE = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
@@ -79,10 +79,11 @@ def main():
         nn.ReLU(),
         nn.Dropout(0.3),
         nn.Linear(256, num_classes),
+        nn.Softmax(dim=1)
     )
     model = model.to(DEVICE)
 
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.NLLLoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-5)
 
     best_val_acc = 0.0
@@ -93,8 +94,12 @@ def main():
         total_loss = 0
         for batch_x, batch_y in train_loader:
             batch_x, batch_y = batch_x.to(DEVICE), batch_y.to(DEVICE)
-            outputs = model(batch_x)
-            loss = criterion(outputs, batch_y)
+            
+            # Forward pass => probabilities
+            probs = model(batch_x)  # shape [batch_size, num_classes], sums to 1
+            # Convert probabilities to log-probabilities for NLLLoss
+            log_probs = torch.log(probs + 1e-8)
+            loss = criterion(log_probs, batch_y)
 
             optimizer.zero_grad()
             loss.backward()

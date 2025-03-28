@@ -77,11 +77,12 @@ def main():
         nn.BatchNorm1d(256),
         nn.ReLU(),
         nn.Dropout(0.3),
-        nn.Linear(256, len(label_encoder.classes_))
+        nn.Linear(256, len(label_encoder.classes_)),
+        nn.Softmax(dim=1)
     )
     model = model.to(DEVICE)
 
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.NLLLoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-5)
 
     best_val_acc = 0.0
@@ -92,8 +93,12 @@ def main():
         total_loss = 0
         for batch_x, batch_y in train_loader:
             batch_x, batch_y = batch_x.to(DEVICE), batch_y.to(DEVICE)
-            outputs = model(batch_x)
-            loss = criterion(outputs, batch_y)
+
+            # Forward pass => probabilities
+            probs = model(batch_x)  # shape [batch_size, num_classes], sums to 1
+            # Convert probabilities to log-probabilities for NLLLoss
+            log_probs = torch.log(probs + 1e-8)
+            loss = criterion(log_probs, batch_y)
 
             optimizer.zero_grad()
             loss.backward()

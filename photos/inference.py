@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 from torchvision import models, transforms
+import torch.nn as nn
 from PIL import Image
 from pathlib import Path
 
@@ -26,7 +27,8 @@ def load_model():
         torch.nn.BatchNorm1d(256),
         torch.nn.ReLU(),
         torch.nn.Dropout(0.3),
-        torch.nn.Linear(256, len(classes))
+        torch.nn.Linear(256, len(classes)),
+        nn.Softmax(dim=1)
     )
     model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE)['model_state_dict'])
     model = model.to(DEVICE)

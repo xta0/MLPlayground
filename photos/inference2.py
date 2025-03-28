@@ -29,6 +29,7 @@ def load_model():
         nn.ReLU(),
         nn.Dropout(0.3),
         nn.Linear(256, num_classes),
+        nn.Softmax(dim=1)
     )
     model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE)['model_state_dict'])
     model = model.to(DEVICE)
