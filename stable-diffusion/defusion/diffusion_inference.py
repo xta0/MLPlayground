@@ -275,9 +275,9 @@ def main():
     # visualize_samples(samples, nrow=8)
     # Animate the sampling process for one image (the first sample).
     print("Animating the sampling process for one image...")
-    # animate_sample_process(intermediate_ddpm, interval=200, save=False)
-    animate_all_samples(intermediate_ddpm, nrow=8, interval=200, save=True)
-
+    animate_sample_process(intermediate_ddpm, interval=200, save=False)
+    # animate_all_samples(intermediate_ddpm, nrow=8, interval=200, save=True)
+# 
 # =============================================================================
 # Entry Point
 # =============================================================================
