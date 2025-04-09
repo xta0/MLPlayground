@@ -5,6 +5,8 @@ import numpy as np
 import torch
 from PIL import Image
 
+CACHE_DIR = "/Volumes/ai-1t/diffuser"
+
 image = load_image('./mona.jpg')
 print(type(image))
 #  Display the noise image
@@ -32,8 +34,11 @@ image_array_chw_mps = image_array_chw.to("mps", dtype=torch.float16)
 vae_model = AutoencoderKL.from_pretrained(
     "runwayml/stable-diffusion-v1-5",
     subfolder = "vae",
-    torch_dtype=torch.float16
+    torch_dtype=torch.float16,
+    cached_dir = CACHE_DIR
 ).to("mps")
+
+print(vae_model)
 
 # encode the image into a laten vector
 latents = vae_model.encode(image_array_chw_mps).latent_dist.sample()

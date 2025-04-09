@@ -169,7 +169,7 @@ def visualize_samples(samples, nrow=8):
     plt.imshow(grid_img.permute(1, 2, 0).cpu().numpy())
     plt.title("DDPM Generated Samples")
     plt.axis("off")
-    plt.show()
+    plt.savefig("sample.png", bbox_inches='tight', pad_inches=0)
 
 def animate_sample_process(intermediate, interval=200, save=False, save_path="animation.gif"):
     """
@@ -191,7 +191,8 @@ def animate_sample_process(intermediate, interval=200, save=False, save_path="an
     img = np.transpose(intermediate[0, 0], (1, 2, 0))
     im = ax.imshow(img, animated=True)
     ax.axis("off")
-    
+    # plt.savefig("filename.png", bbox_inches='tight', pad_inches=0)
+
     def update(frame):
         img = np.transpose(intermediate[frame, 0], (1, 2, 0))
         im.set_array(img)
@@ -202,8 +203,6 @@ def animate_sample_process(intermediate, interval=200, save=False, save_path="an
     
     if save:
         ani.save(save_path, writer=PillowWriter(fps=1000 / interval))
-    
-    plt.show()
     return ani
 # =============================================================================
 # Animation Helper: Animate All Samples in One Grid
@@ -223,15 +222,16 @@ def animate_all_samples(intermediate, nrow=8, interval=200, save=False, save_pat
       ani          : The FuncAnimation object.
     """
     num_frames = intermediate.shape[0]
-    fig, ax = plt.subplots()
     
-    # For the first frame, convert the batch (32 samples) into a grid.
     frame_tensor = torch.tensor(intermediate[0])
-    grid_img = make_grid(frame_tensor, nrow=nrow, padding=2)
+    grid_img = make_grid(frame_tensor, nrow=nrow, padding=0)  # No padding
     grid_img_np = grid_img.permute(1, 2, 0).numpy()
-    
+
+    fig, ax = plt.subplots(figsize=(grid_img_np.shape[1] / 40, grid_img_np.shape[0] / 40), dpi=100)
+    fig.subplots_adjust(left=0, right=1, top=1, bottom=0)  # Remove border
     im = ax.imshow(grid_img_np, animated=True)
     ax.axis("off")
+
     
     def update(frame):
         frame_tensor = torch.tensor(intermediate[frame])

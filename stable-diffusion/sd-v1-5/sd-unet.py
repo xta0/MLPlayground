@@ -6,3 +6,5 @@ unet = UNet2DConditionModel.from_pretrained(
     subfolder = "unet",
     torch_dtype = torch.float16
 ).to("mps")
+
+print(unet.forward)
