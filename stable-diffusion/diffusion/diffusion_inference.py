@@ -204,6 +204,7 @@ def animate_sample_process(intermediate, interval=200, save=False, save_path="an
     if save:
         ani.save(save_path, writer=PillowWriter(fps=1000 / interval))
     return ani
+
 # =============================================================================
 # Animation Helper: Animate All Samples in One Grid
 # =============================================================================
