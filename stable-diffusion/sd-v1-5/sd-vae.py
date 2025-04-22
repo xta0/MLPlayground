@@ -38,11 +38,8 @@ vae_model = AutoencoderKL.from_pretrained(
     cached_dir = CACHE_DIR
 ).to("mps")
 
-print(vae_model)
-
 # encode the image into a laten vector
 latents = vae_model.encode(image_array_chw_mps).latent_dist.sample()
-print(latents)
 print(latents[0].shape) #[4, 37, 37]
 
 def latent_to_img(latents_input, scale_rate = 1):
