@@ -32,8 +32,9 @@ def main():
     adam_weight_decay               = 1e-2
     adam_epsilon                    = 1e-08
     dataset_name                    = None                  #"lambdalabs/pokemon-blip-captions"
-    train_data_dir                  = "./train_data"
-    top_rows                        = 4
+    # train_data_dir                  = "./train_data"
+    train_data_dir                  = "./van_gogh/images"
+    top_rows                        = 10
     output_dir                      = "output_dir"
     resolution                      = 512
     center_crop                     = True
@@ -248,7 +249,6 @@ def main():
 
             # step 7. Predict the noise residual and compute loss
             model_pred = unet(noisy_latents, timesteps, encoder_hidden_states).sample
-
 
             print("model_pred.shape: ", model_pred.shape)
             print("target.shape: ", target.shape)
