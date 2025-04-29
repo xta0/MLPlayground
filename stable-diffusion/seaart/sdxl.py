@@ -3,12 +3,11 @@ from diffusers import StableDiffusionXLPipeline
 from PIL import Image
 import numpy as np
 
-cache_dir = "/Volumes/ai-1t/diffuser"
 
 pipeline = StableDiffusionXLPipeline.from_single_file(
-    "/Volumes/ai-1t/seaart/waiREALCN_v14.safetensors",
+    "/Volumes/ai-1t/seaart/sd-xl-waiREALCN_v14.safetensors",
     torch_dtype = torch.float32,
-    use_safetensors = True
+    use_safetensors = True,
 ).to("mps")
 
 # prompt = """
@@ -17,13 +16,18 @@ pipeline = StableDiffusionXLPipeline.from_single_file(
 # school uniform,
 # Black collar,Smile,from above,looking at viewer,private room
 # """
-
 prompt = """
-best,quality,ultra detailed,absolutely resolution,
-1girl, blood on face, angry, holding spear, (flying), 
-chinese mythology,cloudy, detailed sky, 
-abstract background, (flame_surge_style:0.5)
+ultra detailed, detailed face, detailed eyes, beautiful doe eyes, masterpiece,
+best quality, photo realistic, absurdres, 8K, raw photo, 1girl, solo, beautiful young woman, 
+20yo, asian, realistic skin texture, shiny skin, office, black thighhighs, garter straps, turtleneck, 
+lanyard, sleeveless, pencil skirt, perfect body, natural huge breasts, grin, smile to the camera
 """
+# prompt = """
+# best,quality,ultra detailed,absolutely resolution,
+# 1girl, blood on face, angry, holding spear, (flying), 
+# chinese mythology,cloudy, detailed sky, 
+# abstract background, (flame_surge_style:0.5)
+# """
 image = pipeline(
     prompt = prompt,
     generator = torch.Generator("mps").manual_seed(1)
@@ -33,7 +37,7 @@ pipeline.to("cpu")
 torch.mps.empty_cache()
 
 image_pil = Image.fromarray(np.array(image))  # Convert from NumPy to PIL
-image_pil.save("base.png")
+image_pil.save("sdxl_base.png")
 
 # LoRA fine tuning
 
