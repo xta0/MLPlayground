@@ -67,7 +67,7 @@ inpaint_pipe = StableDiffusionInpaintPipeline.from_pretrained(
     cache_dir = CACHE_DIR
 ).to("mps")
 
-sd_prompt = "office desk"
+sd_prompt = "blue sky and mountains, high resolution"
 sd_neg_prompt = "lowres, bad anatomy, low quality, monochrome"
 out_image = inpaint_pipe(
     prompt=sd_prompt,
