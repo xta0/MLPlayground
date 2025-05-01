@@ -1,5 +1,13 @@
 """
-FYI: The transformers library has two types of model classes:  AutoModelForCausalLM  and AutoModelForMaskedLM. Causal language models represent the decoder-only models that are used for text generation. They are described as causal, because to predict the next token, the model can only attend to the preceding left tokens. Masked language models represent the encoder-only models that are used for rich text representation. They are described as masked, because they are trained to predict a masked or hidden token in a sequence.
+FYI: The transformers library has two types of model classes: 
+AutoModelForCausalLM and AutoModelForMaskedLM. 
+
+Causal language models represent the decoder-only models that are used for text generation. 
+They are described as causal, because to predict the next token, 
+the model can only attend to the preceding left tokens.
+
+Masked language models represent the encoder-only models that are used for rich text representation. 
+They are described as masked, because they are trained to predict a masked or hidden token in a sequence.
 """
 
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline

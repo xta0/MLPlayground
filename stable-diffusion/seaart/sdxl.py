@@ -18,9 +18,9 @@ pipeline = StableDiffusionXLPipeline.from_single_file(
 # """
 prompt = """
 ultra detailed, detailed face, detailed eyes, beautiful doe eyes, masterpiece,
-best quality, photo realistic, absurdres, 8K, raw photo, 1girl, solo, beautiful young woman, 
-20yo, asian, realistic skin texture, shiny skin, office, black thighhighs, garter straps, turtleneck, 
-lanyard, sleeveless, pencil skirt, perfect body, natural huge breasts, grin, smile to the camera
+best quality, photo realistic, 8K, raw photo, 1girl, solo, beautiful young woman, 
+20yo, asian, realistic skin texture, shiny skin, office, black thighhighs, turtleneck, 
+sleeveless, pencil skirt, perfect body, natural huge breasts, grin, smile to the camera
 """
 # prompt = """
 # best,quality,ultra detailed,absolutely resolution,
@@ -37,7 +37,7 @@ pipeline.to("cpu")
 torch.mps.empty_cache()
 
 image_pil = Image.fromarray(np.array(image))  # Convert from NumPy to PIL
-image_pil.save("sdxl_base.png")
+image_pil.save("sdxl_base2.png")
 
 # LoRA fine tuning
 
