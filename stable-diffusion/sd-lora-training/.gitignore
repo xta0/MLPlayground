@@ -1,1 +1,7 @@
 van_gogh/images
+*.safetensors
+/tao
+/tao_hi_res
+output_dir/
+*.png
+*.jpg

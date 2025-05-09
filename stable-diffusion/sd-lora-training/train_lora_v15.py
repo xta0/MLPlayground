@@ -24,24 +24,24 @@ def main():
     output_dir                      = "."
     pretrained_model_name_or_path   = "runwayml/stable-diffusion-v1-5"
     # the number of layers in LoRA used to fine tune the model
-    lora_rank                       = 4
+    lora_rank                       = 8
     # controls the strength of the LoRA, setting it to equal to LoRA rank is a common practice
-    lora_alpha                      = 4 
+    lora_alpha                      = 8 
     learning_rate                   = 1e-4
     adam_beta1, adam_beta2          = 0.9, 0.999
     adam_weight_decay               = 1e-2
     adam_epsilon                    = 1e-08
     dataset_name                    = None                  #"lambdalabs/pokemon-blip-captions"
     # train_data_dir                  = "./train_data"
-    train_data_dir                  = "./van_gogh/images"
-    top_rows                        = 10
+    train_data_dir                  = "./tao"
+    top_rows                        = 20
     output_dir                      = "output_dir"
     resolution                      = 512
     center_crop                     = True
-    random_flip                     = True
+    random_flip                     = False
     train_batch_size                = 1
     gradient_accumulation_steps     = 1
-    num_train_epochs                = 200
+    num_train_epochs                = 100
     
     lr_scheduler_name               = "constant" #"cosine"#
     max_grad_norm                   = 1.0
@@ -114,7 +114,7 @@ def main():
     image_column, caption_column = dataset_columns[0],dataset_columns[1]
     print(image_column, caption_column) # image text
     
-    def tokenize_captions(examples, is_train=True):
+    def tokenize_captions(examples):
         '''Preprocessing the datasets.We need to tokenize input captions and transform the images.'''
         captions = []
         for caption in examples[caption_column]:
