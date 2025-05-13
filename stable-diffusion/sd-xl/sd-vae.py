@@ -6,11 +6,14 @@ import numpy as np
 import torch
 from PIL import Image
 
+CACHE_DIR = "/Volumes/ai-1t/diffuser"
+
 # encode the image from pixel space to latent space
 vae_model = AutoencoderKL.from_pretrained(
     "stabilityai/stable-diffusion-xl-base-1.0",
     subfolder = "vae",
     torch_dtype=torch.float32
+    cache_dir = CACHE_DIR,
 ).to("mps")
 
 image_path = './mona.jpg'

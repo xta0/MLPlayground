@@ -6,10 +6,13 @@ from transformers import CLIPTokenizer, CLIPTextModel, CLIPTextModelWithProjecti
 
 prmpt = "a running dog"
 
+CACHE_DIR = "/Volumes/ai-1t/diffuser"
+
 clip_tokenizer_1 = CLIPTokenizer.from_pretrained(
     "stabilityai/stable-diffusion-xl-base-1.0",
     subfolder = "tokenizer",
-    dtype = torch.float16
+    dtype = torch.float16,
+    cache_dir= CACHE_DIR
 )
 
 input_tokens_1 = clip_tokenizer_1(

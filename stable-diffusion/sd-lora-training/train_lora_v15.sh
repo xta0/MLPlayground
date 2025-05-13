@@ -9,6 +9,7 @@ TRAIN_DIR="./tao"
 OUTPUT_DIR="./output_dir"
 SCRIPT_PATH="/Users/ta0x1c/Projects/diffusers/examples/text_to_image/train_text_to_image_lora.py"  # Relative to where you cloned diffusers
 CAPTION_COLUMN="text"
+CACHE_DIR="/Volumes/ai-1t/diffuser"
 
 # === Training parameters ===
 RESOLUTION=512
@@ -25,6 +26,7 @@ LORA_ALPHA=4
 # === Launch training ===
 accelerate launch $SCRIPT_PATH \
   --pretrained_model_name_or_path="$MODEL_NAME" \
+  --cache_dir="$CACHE_DIR" \
   --train_data_dir="$TRAIN_DIR" \
   --caption_column="$CAPTION_COLUMN" \
   --output_dir="$OUTPUT_DIR" \
@@ -40,5 +42,5 @@ accelerate launch $SCRIPT_PATH \
   --rank=$LORA_R \
   --mixed_precision="no" \
   --max_train_steps=$MAX_TRAIN_STEPS \
-  --validation_prompt="a photo of tao xu, close-up, professional lighting"\
+  --validation_prompt="a photo of Tao, close-up, professional lighting"\
   

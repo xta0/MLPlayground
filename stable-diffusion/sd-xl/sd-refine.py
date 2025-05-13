@@ -6,10 +6,12 @@ from PIL import Image
 import numpy as np
 from diffusers.utils import load_image
 
+CACHE_DIR = "/Volumes/ai-1t/diffuser"
+
 base_pipe = StableDiffusionXLPipeline.from_pretrained(
     "RunDiffusion/RunDiffusion-XL-Beta",
     torch_dtype = torch.float16,
-    cache_dir = "/Volumes/ai-1t/diffuser"
+    cache_dir = CACHE_DIR
 )
 base_pipe.watermark = None
 
