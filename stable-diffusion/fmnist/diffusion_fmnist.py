@@ -1,38 +1,55 @@
+# ldm_fashion_mnist.py
+import math, os, random
+from dataclasses import dataclass
 import torch
-from torchvision import datasets, transforms
-from torch import nn
+import torch.nn as nn
 import torch.nn.functional as F
-from torch import optim
-import deepinv
+from torch.utils.data import DataLoader
+import torchvision as tv
+from torchvision import transforms
+from torchvision.utils import save_image
+from tqdm import tqdm
 
-device = "mps"
+# -------------------------
+# Device (MPS on Apple if available)
+# -------------------------
+def get_device():
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-batch_size = 32
-image_size = 32 
+DEVICE = get_device()
+torch.manual_seed(42)
+random.seed(42)
 
-# Define a transform to normalize the data
-transform = transforms.Compose([
-    transforms.Resize((image_size, image_size)),
-    transforms.ToTensor(),
-    transforms.Normalize((0.0,), (1.0,))
-])
-# Download and load the training data
-trainset = datasets.FashionMNIST('./F_MNIST_data/', download=True, train=True, transform=transform)
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True)
+# -------------------------
+# 1) Data
+# -------------------------
+# Fashion-MNIST is 28x28 grayscale; we resize to 32x32 for nicer powers-of-two downsampling.
+def make_dataloaders(batch_size=64):
+    tfm = transforms.Compose([
+        transforms.Resize(32),
+        transforms.ToTensor(),              # [0,1]
+        transforms.Normalize([0.5],[0.5])   # [-1,1]
+    ])
+    train = tv.datasets.FashionMNIST(root="./data", train=True, download=True, transform=tfm)
+    test  = tv.datasets.FashionMNIST(root="./data", train=False, download=True, transform=tfm)
+    return (
+        DataLoader(train, batch_size=batch_size, shuffle=True, num_workers=2, pin_memory=False),
+        DataLoader(test,  batch_size=batch_size, shuffle=False, num_workers=2, pin_memory=False),
+    )
 
-# Download and load the test data
-testset = datasets.FashionMNIST('./F_MNIST_data/', download=True, train=False, transform=transform)
-testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=True)
 
-lr = 1e-4
-epochs = 10
 
-model = deepinv.models.DiffUNet(
-    in_channels=1,
-    out_channels=1,
-    pretrained=None
-).to(device)
+# -------------------------
+# 6) Main
+# -------------------------
+def main():
+    os.makedirs("outputs", exist_ok=True)
+    train_loader, test_loader = make_dataloaders(batch_size=128)
+    sample = next(iter(train_loader))  # Warm-up for MPS
+    print(sample[0].shape)
 
-optimizer = optim.Adam(model.parameters(), lr=lr)
 
-loss_fn = deepinv.loss.MSE()
+if __name__ == "__main__":
+    main()
