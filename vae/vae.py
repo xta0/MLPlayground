@@ -321,16 +321,11 @@ def decode_bernoulli_sample(model, z):
     model.eval()
     with torch.no_grad():
         proj = model.projection(z).view(z.size(0), model.feature_channels, model.feature_size, model.feature_size)
-        logits = model.decode(proj)                  # raw logits
-        p = torch.sigmoid(logits).clamp(0, 1)
-        sample = torch.bernoulli(p)                  # 0/1 per pixel
-    # 4) Make and save grids
-    grid_p = torchvision.utils.make_grid(p, nrow=8)                 # "mean" image
-    grid_s = torchvision.utils.make_grid(sample, nrow=8)          # sampled image
+        probs = model.decode(proj).clamp(0, 1)      # raw logits
 
-    torchvision.utils.save_image(grid_p, f"vae_bernoulli_probs.png")
-    torchvision.utils.save_image(grid_s, f"vae_b_sample.png")
-    print(f"Saved: vae_bernoulli_probs.png, vae_b_sample.png")
+    grid_p = torchvision.utils.make_grid(probs, nrow=8)
+    torchvision.utils.save_image(grid_p, "vae_bernoulli_mean.png")
+    print("Saved: vae_bernoulli_mean.png")
 
 
 def get_device():
