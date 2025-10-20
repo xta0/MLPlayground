@@ -1,0 +1,1 @@
+{"epochs": 50, "lr": 0.0003, "latent_dim": 256, "feature_size": 2, "feature_channels": 512, "loss_fn": "BCE"}
