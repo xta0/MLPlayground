@@ -3,6 +3,7 @@ import tarfile
 
 import requests
 import spacy
+from collections import Counter
 
 DATA_DIR = "data"
 TRAINING_ARCHIVE = os.path.join(DATA_DIR, "training.tar.gz")
@@ -52,12 +53,12 @@ def tokenize(text, language):
     tokens = tokenizer(text)
     return [token.text for token in tokens]
 
-def build_dictionary(tokens):
-    tokens = ["BOS"] + tokens + ["EOS"]
+def build_dictionary(training_set, language):
+    tokens = [["BOS"] + tokenize(sentence, language) + ["EOS"] for sentence in training_set]
     PAD=0
     UNK=1
     word_count=Counter()
-    for sentence in en_tokens:
+    for sentence in tokens:
         for word in sentence:
             word_count[word]+=1
     frequency=word_count.most_common(50000)        
@@ -68,6 +69,7 @@ def build_dictionary(tokens):
     en_word_dict["UNK"]=UNK
     # another dictionary to map indexes to tokens
     en_idx_dict={v:k for k,v in en_word_dict.items()}
+    return en_idx_dict
 
 def main():
     train_de, train_en = fetchTrainingData()
