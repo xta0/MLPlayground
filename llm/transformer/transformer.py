@@ -37,7 +37,7 @@ def fetchTrainingData():
     print(trainen[:1])
     return trainde, trainen
 
-def tokenize(text, language):
+def initTokenizer(language):
     if language == "de":
         model_name = "de_core_news_sm"
     elif language == "en":
@@ -49,9 +49,7 @@ def tokenize(text, language):
         tokenizer = spacy.load(model_name)
     except OSError:
         tokenizer = spacy.blank(language)
-
-    tokens = tokenizer(text)
-    return [token.text for token in tokens]
+    return tokenizer
 
 def build_dictionary(training_set, language):
     tokens = [["BOS"] + tokenize(sentence, language) + ["EOS"] for sentence in training_set]
@@ -62,22 +60,37 @@ def build_dictionary(training_set, language):
         for word in sentence:
             word_count[word]+=1
     frequency=word_count.most_common(50000)        
-    total_en_words=len(frequency)+2
-    # a dictionary mapping tokens to indexes
+    # total_en_words=len(frequency)+2
+
+    # idx is the order of the word in the dictionary
     en_word_dict={w[0]:idx+2 for idx,w in enumerate(frequency)}
     en_word_dict["PAD"]=PAD
     en_word_dict["UNK"]=UNK
+
     # another dictionary to map indexes to tokens
     en_idx_dict={v:k for k,v in en_word_dict.items()}
     return en_idx_dict
 
+def tokenize(tokenizer, vocab, text):
+    tokens = tokenizer(text)
+    return [vocab.get(token.text, vocab["UNK"]) for token in tokens]
+
 def main():
     train_de, train_en = fetchTrainingData()
+    
+    # bulid vocab
+    vocab_de = build_dictionary(train_de, "de")
+    vocab_en = build_dictionary(train_en, "en")
 
-    tokens_de = tokenize(train_de[0], "de")
-    tokens_en = tokenize(train_en[0], "en")
-    print(tokens_de)
-    print(tokens_en)
+    # init tokenizers
+    tokenizer_de = initTokenizer("de")
+    tokenizer_en = initTokenizer("en")
+
+    test_de = tokenize(train_de[0])
+    test_en = tokenize(train_en[0])
+
+    print(tokenize(test_de, tokenizer_de, vocab_de))
+    print(tokenize(test_en, tokenizer_en, vocab_en))
 
 if __name__ == "__main__":
     main()
