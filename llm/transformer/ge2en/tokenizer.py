@@ -40,9 +40,12 @@ class TextTokenizer:
         self.vocab["UNK"] = self.UNK
         return self.vocab
 
-    def tokenize(self, text):
+    def tokenize(self, text, add_special_tokens=True):
         tokens = self.tokenizer(text)
-        return [self.vocab.get(token.text, self.vocab["UNK"]) for token in tokens]
+        token_texts = [token.text for token in tokens]
+        if add_special_tokens:
+            token_texts = ["BOS"] + token_texts + ["EOS"]
+        return [self.vocab.get(token, self.vocab["UNK"]) for token in token_texts]
 
     def detokenize(self, tokens):
         idx2word = {v: k for k, v in self.vocab.items()}

@@ -20,9 +20,12 @@ class BaselineLlamaForCausalLM(LlamaForCausalLM):
         out = super().forward(
             input_ids,
             attention_mask,
+            output_hidden_states=True,
             use_cache=False,
+            return_dict=True,
         )
-        return out.logits
+        last_hidden_state = out.hidden_states[-1]  # <-- last 4 layers' outputs
+        return out.logits, last_hidden_state
 
 model_id: str = "meta-llama/Llama-3.1-8B-Instruct"
 torch_model = BaselineLlamaForCausalLM.from_pretrained(model_id).eval()
@@ -52,39 +55,12 @@ print("attention_mask.shape: ", input_ids.shape)
 print(attention_mask)
 
 
-max_new_tokens = 10
+max_new_tokens = 1
 generated_ids = input_ids.clone()
 
-for i in range(max_new_tokens):
-    print(f"Step {i}")
-    # Forward pass
-    logits = torch_model(input_ids=generated_ids, attention_mask=torch.ones_like(generated_ids))
-    print("logits: ", logits.shape)
-    # torch.Size([1, 6, 32000])
-    # (batch, The sequence length of the input, vocab size)
+logits, last_hidden_state = torch_model(input_ids=generated_ids, attention_mask=torch.ones_like(generated_ids))
+print("last hidden state: ", last_hidden_state.shape)
+print("logits: ", logits.shape)
 
-    # Get the last token's logits
-    next_token_logits = logits[:, -1, :]
-    print("next_token_logits: ", next_token_logits.shape)
-    # Greedy decoding: pick the token with the highest probability
-    next_token_id = next_token_logits.argmax(dim=-1).unsqueeze(0)
-    print("next_token_id: ", next_token_id.shape)
-
-    # Decode the token ID to string
-    next_token_str = tokenizer.decode(next_token_id[0].item())
-    print(f"Decoded next token: {next_token_str}")
-    
-    # Append next token to the generated_ids
-    generated_ids = torch.cat([generated_ids, next_token_id], dim=1)
-    print("generated_ids: ", generated_ids.shape)
-    # Decode the entire sequence back into text
-    output_text = tokenizer.decode(generated_ids[0], skip_special_tokens=True)
-    print(output_text)
-    
-    # If the model has an EOS token and we encounter it, break
-    if next_token_id.item() == tokenizer.eos_token_id:
-        break
-
-# Decode the entire sequence back into text
-output_text = tokenizer.decode(generated_ids[0], skip_special_tokens=True)
-print(output_text)
+calculated_logits = torch_model.lm_head(last_hidden_state)
+print("lm_head(logits):", calculated_logits.shape)

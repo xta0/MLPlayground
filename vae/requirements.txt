@@ -1,0 +1,10 @@
+# Core training stack.
+# PyTorch publishes this torch/torchvision pair together for macOS wheels.
+torch==2.7.1
+torchvision==0.22.1
+
+# Project dependencies.
+torchsummary==1.5.1
+matplotlib>=3.8
+numpy>=1.26
+Pillow>=10.0

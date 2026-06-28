@@ -45,6 +45,8 @@ inputs = tokenizer(
 input_ids = inputs["input_ids"]  # Shape: (1, max_length)
 attention_mask = inputs["attention_mask"]  # Shape: (1, max_length)
 
+print("attention mask: ", attention_mask)
+
 # Keep only non-zero tokens for initial prompt
 prompt_length = (attention_mask > 0).sum()
 input_ids = input_ids[:, :prompt_length]

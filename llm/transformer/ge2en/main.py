@@ -2,6 +2,8 @@ import os
 import tarfile
 import requests
 
+import numpy as np
+
 from tokenizer import TextTokenizer
 
 DATA_DIR = "data"
@@ -37,6 +39,33 @@ def fetchTrainingData():
     return trainde, trainen
 
 
+def prepare_batch_training_data(de_sentences, en_sentences, tokenizer_de,
+                                tokenizer_en, batch_size=128):
+    # 1. Sort sentences by length first.
+    # 2. Consecutive rows now have similar lengths.
+    # 3. Create batches from consecutive rows.
+    # 4. Shuffle the batch order.
+    out_de_ids = [tokenizer_de.tokenize(sentence)
+                  for sentence in de_sentences]
+    out_en_ids = [tokenizer_en.tokenize(sentence)
+                  for sentence in en_sentences]
+
+    sorted_ids = sorted(range(len(out_de_ids)),
+                        key=lambda idx: len(out_de_ids[idx]))
+    out_de_ids = [out_de_ids[idx] for idx in sorted_ids]
+    out_en_ids = [out_en_ids[idx] for idx in sorted_ids]
+
+    idx_list = np.arange(0, len(out_de_ids), batch_size)
+    np.random.shuffle(idx_list)
+
+    batch_indexes = []
+    for idx in idx_list:
+        batch_indexes.append(np.arange(idx, min(len(out_de_ids),
+                                                idx + batch_size)))
+
+    return out_de_ids, out_en_ids, batch_indexes
+
+
 def main():
      # init tokenizers
     tokenizer_de = TextTokenizer("de")
@@ -48,17 +77,12 @@ def main():
     tokenizer_de.build_dictionary(train_de)
     tokenizer_en.build_dictionary(train_en)
 
-    test_de = tokenizer_de.tokenize(train_de[0])
-    test_en = tokenizer_en.tokenize(train_en[0])
+   
+    train_de_ids, train_en_ids, batch_indexes = prepare_batch_training_data(
+        train_de, train_en, tokenizer_de, tokenizer_en
+    )
+    print(batch_indexes[0])
 
-    print(test_de)
-    print(test_en)
-    
-    detokenized_de = tokenizer_de.detokenize(test_de)
-    detokenized_en = tokenizer_en.detokenize(test_en)
-
-    print(detokenized_de)
-    print(detokenized_en)
 
 
 if __name__ == "__main__":

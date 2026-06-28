@@ -1,0 +1,1 @@
+{"dataset": "celeba64", "data_root": "./img_align_celeba", "image_size": 64, "batch_size": 64, "epochs": 50, "lr": 0.0003, "latent_dim": 256, "feature_size": 4, "feature_channels": 512, "loss_fn": "MSE_2"}
