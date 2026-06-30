@@ -1,0 +1,1 @@
+{"dataset": "celeba64", "data_root": "./img_align_celeba", "image_size": 64, "batch_size": 64, "epochs": 30, "lr": 0.0003, "base_channels": 128, "latent_channels": 4, "latent_size": 8, "dropout": 0.0, "kl_weight": 0.0005, "mse_weight": 0.25, "train_fraction": 0.25, "subset_seed": 42, "checkpoint_every": 10, "input_range": "[-1, 1]", "output_activation": "tanh"}

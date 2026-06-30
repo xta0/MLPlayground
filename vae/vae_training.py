@@ -90,7 +90,9 @@ def prepare_image_data(dataset_name="celeba64",
                        normalize=False,
                        shuffle=True,
                        num_workers=2,
-                       download=False):
+                       download=False,
+                       subset_fraction=1.0,
+                       subset_seed=42):
     if image_size % 16 != 0:
         raise ValueError("image_size must be divisible by 16 for the current encoder/decoder.")
 
@@ -125,6 +127,14 @@ def prepare_image_data(dataset_name="celeba64",
         dataset = datasets.ImageFolder(image_root, transform=transform)
     else:
         raise ValueError(f"Unsupported dataset: {dataset_name}. Choose one of {SUPPORTED_DATASETS}.")
+
+    if not 0 < subset_fraction <= 1:
+        raise ValueError("subset_fraction must be greater than 0 and less than or equal to 1.")
+    if subset_fraction < 1:
+        subset_size = max(1, int(len(dataset) * subset_fraction))
+        generator = torch.Generator().manual_seed(subset_seed)
+        indices = torch.randperm(len(dataset), generator=generator)[:subset_size].tolist()
+        dataset = torch.utils.data.Subset(dataset, indices)
 
     return torch.utils.data.DataLoader(
         dataset,
@@ -349,6 +359,8 @@ def parse_args():
     parser.add_argument("--lr", type=float, default=3e-04)
     parser.add_argument("--latent-dim", type=int, default=256)
     parser.add_argument("--feature-channels", type=int, default=512)
+    parser.add_argument("--train-fraction", type=float, default=1.0)
+    parser.add_argument("--subset-seed", type=int, default=42)
     parser.add_argument("--model-file", default=None)
     parser.add_argument("--download", action="store_true")
     return parser.parse_args()
@@ -364,7 +376,9 @@ def main():
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.num_workers,
-        download=args.download
+        download=args.download,
+        subset_fraction=args.train_fraction,
+        subset_seed=args.subset_seed
     )
 
     batch = next(iter(train_loader))

@@ -1,25 +1,33 @@
 import argparse
 import json
 import os
+import re
 
 import torch
 import torchvision
 
-from vae_training import SUPPORTED_DATASETS, VAE, get_device, prepare_image_data
+from vae_training import SUPPORTED_DATASETS, prepare_image_data
+from vae_training_autoencoder_kl import AutoencoderKL, get_device
 
 
 def load_training_config(model_file):
-    config_file = model_file.replace(".pth", ".json")
-    if os.path.exists(config_file):
-        with open(config_file, "r") as f:
-            return json.load(f)
+    stem, _ = os.path.splitext(model_file)
+    candidate_files = [f"{stem}.json"]
+    base_stem = re.sub(r"_epoch_\d+$", "", stem)
+    if base_stem != stem:
+        candidate_files.append(f"{base_stem}.json")
+
+    for config_file in candidate_files:
+        if os.path.exists(config_file):
+            with open(config_file, "r") as f:
+                return json.load(f)
     return {}
 
 
 def resolve_settings(args):
     dataset = args.dataset or "celeba64"
     image_size = args.image_size or 64
-    model_file = args.model_file or f"vae_{dataset}_{image_size}.pth"
+    model_file = args.model_file or f"vae_autoencoder_kl_{dataset}_{image_size}.pth"
     config = load_training_config(model_file)
 
     dataset = args.dataset or config.get("dataset", dataset)
@@ -32,22 +40,23 @@ def resolve_settings(args):
         "image_size": image_size,
         "batch_size": args.batch_size or config.get("batch_size", 64),
         "num_workers": args.num_workers if args.num_workers is not None else 2,
-        "latent_dim": args.latent_dim or config.get("latent_dim", 256),
-        "feature_channels": args.feature_channels or config.get("feature_channels", 512),
+        "base_channels": args.base_channels or config.get("base_channels", 128),
+        "latent_channels": args.latent_channels or config.get("latent_channels", 4),
+        "dropout": config.get("dropout", 0.0),
     }
 
 
-def load_model(model_file, image_size, latent_dim, feature_channels, device):
+def load_model(settings, device):
+    model_file = settings["model_file"]
     if not os.path.exists(model_file):
         raise FileNotFoundError(f"Model file not found: {model_file}")
 
-    model = VAE(
+    model = AutoencoderKL(
         in_channels=3,
-        latent_dim=latent_dim,
-        feature_size=image_size // 16,
-        feature_channels=feature_channels,
+        base_channels=settings["base_channels"],
+        latent_channels=settings["latent_channels"],
+        dropout=settings["dropout"],
     )
-
     try:
         state_dict = torch.load(model_file, map_location="cpu", weights_only=True)
     except TypeError:
@@ -59,16 +68,20 @@ def load_model(model_file, image_size, latent_dim, feature_channels, device):
     return model
 
 
+def to_image_range(images):
+    return ((images + 1.0) / 2.0).clamp(0, 1)
+
+
 def show_reconstructions(model, data_loader, count=8, output_path=".", nrow=4):
     device = next(model.parameters()).device
     os.makedirs(output_path, exist_ok=True)
     with torch.no_grad():
         for batch in data_loader:
             x = batch[0][:count].to(device)
-            recon_x, _, _ = model(x)
+            recon_x, _ = model(x)
 
             images = torch.stack(
-                (x.clamp(0, 1).cpu(), recon_x.clamp(0, 1).cpu()),
+                (to_image_range(x).cpu(), to_image_range(recon_x).cpu()),
                 dim=1
             ).flatten(0, 1)
             reconstruction_path = os.path.join(output_path, "reconstructions.png")
@@ -77,22 +90,21 @@ def show_reconstructions(model, data_loader, count=8, output_path=".", nrow=4):
             break
 
 
-def decode_mean_samples(model, z):
-    with torch.no_grad():
-        proj = model.projection(z).view(
-            z.size(0), model.feature_channels, model.feature_size, model.feature_size
-        )
-        return model.decode(proj)
-
-
-def generate_vae_samples(model, count=32, temperature=1.0, output_path=".", nrow=8):
+def generate_vae_samples(model, image_size, count=32, temperature=1.0, output_path=".", nrow=8):
     device = next(model.parameters()).device
+    latent_size = image_size // 8
     model.eval()
     with torch.no_grad():
-        z = torch.randn(count, model.latent_dim, device=device) * temperature
-        images = decode_mean_samples(model, z)
+        z = torch.randn(
+            count,
+            model.latent_channels,
+            latent_size,
+            latent_size,
+            device=device,
+        ) * temperature
+        images = model.decode(z)
 
-    images = images.cpu().clamp(0, 1)
+    images = to_image_range(images).cpu()
     os.makedirs(output_path, exist_ok=True)
 
     for index, image in enumerate(images):
@@ -114,8 +126,8 @@ def parse_args():
     parser.add_argument("--image-size", type=int, default=None)
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--num-workers", type=int, default=None)
-    parser.add_argument("--latent-dim", type=int, default=None)
-    parser.add_argument("--feature-channels", type=int, default=None)
+    parser.add_argument("--base-channels", type=int, default=None)
+    parser.add_argument("--latent-channels", type=int, default=None)
     parser.add_argument("--sample-count", type=int, default=8)
     parser.add_argument("--temperature", type=float, default=1.0)
     parser.add_argument("--output-path", default=".")
@@ -128,13 +140,7 @@ def main():
     args = parse_args()
     settings = resolve_settings(args)
     device = get_device()
-    model = load_model(
-        model_file=settings["model_file"],
-        image_size=settings["image_size"],
-        latent_dim=settings["latent_dim"],
-        feature_channels=settings["feature_channels"],
-        device=device,
-    )
+    model = load_model(settings, device)
 
     sample_loader = prepare_image_data(
         dataset_name=settings["dataset"],
@@ -142,11 +148,12 @@ def main():
         data_root=settings["data_root"],
         image_size=settings["image_size"],
         batch_size=settings["batch_size"],
+        normalize=True,
         shuffle=False,
         num_workers=settings["num_workers"],
         download=False,
     )
-    
+
     show_reconstructions(
         model,
         sample_loader,
@@ -156,6 +163,7 @@ def main():
 
     generate_vae_samples(
         model,
+        image_size=settings["image_size"],
         count=args.sample_count,
         temperature=args.temperature,
         output_path=args.output_path,
