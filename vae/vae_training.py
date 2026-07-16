@@ -247,7 +247,7 @@ class VAE(nn.Module):
     def z(self, mu, logvar):
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
-        return mu + eps * std
+        return mu + eps * std # reparameterization trick
     
     def q(self, x):
         # x comes in as (B, Cfeat, feature_size, feature_size) from encoder
