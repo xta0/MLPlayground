@@ -1,4 +1,3 @@
-from llm.attention.multihead_attention_slow import MultiHeadAttention
 import torch
 import torch.nn as nn
 
@@ -65,39 +64,39 @@ class AttentionHead(nn.Module):
         out = torch.matmul(attention_probs, V) # (1, 65, 65) x (1, 65, 12) -> (1, 65, 12)
         return (out, attention_probs)
 
-    class MultiHeadAttention(nn.Module):
-        def __init__(self, config):
-            super().__init__()
-            self.hidden_size = config["hidden_size"]
-            self.num_heads = config["num_attention_heads"]
-            self.qkv_bias = config.get("qkv_bias", True)
-            self.dropout = nn.Dropout(config.get("attention_probs_dropout_prob", 0.1))
-            
-            self.head_size = self.hidden_size // self.num_heads
-            self.heads = []
-            for _ in range(self.num_heads):
-                head = AttentionHead(self.hidden_size, self.head_size, bias=self.qkv_bias)
-                self.heads.append(head)
-            self.output_projection = nn.Linear(self.hidden_size, self.hidden_size, bias=self.qkv_bias)
+class MultiHeadAttention(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.hidden_size = config["hidden_size"]
+        self.num_heads = config["num_attention_heads"]
+        self.qkv_bias = config.get("qkv_bias", True)
+        self.dropout = nn.Dropout(config.get("attention_probs_dropout_prob", 0.1))
+        
+        self.head_size = self.hidden_size // self.num_heads
+        self.heads = nn.ModuleList()
+        for _ in range(self.num_heads):
+            head = AttentionHead(self.hidden_size, self.head_size, bias=self.qkv_bias)
+            self.heads.append(head)
+        self.output_projection = nn.Linear(self.hidden_size, self.hidden_size, bias=self.qkv_bias)
 
 
-        def forward(self, x):
-            out = []
-            attention_probs = []
-            for head in self.heads:
-                head_out, head_attention_probs = head(x)
-                out.append(head_out)
-                attention_probs.append(head_attention_probs)
-            out = torch.cat(out, dim=-1) # (1, 65, 12*4) -> (1, 65, 48)
-            """
-            Mix and re-combine the heads’ features
-            Technically, you could omit this layer; 
-            the tensor shape would still work. But then the heads’ outputs are only concatenated, 
-            and that attention layer has no learned step to mix their channels. 
-            The projection is part of the standard multi-head attention design.
-            """
-            out = self.output_projection(out)
-            return (out, attention_probs)
+    def forward(self, x):
+        out = []
+        attention_probs = []
+        for head in self.heads:
+            head_out, head_attention_probs = head(x)
+            out.append(head_out)
+            attention_probs.append(head_attention_probs)
+        out = torch.cat(out, dim=-1) # (1, 65, 12*4) -> (1, 65, 48)
+        """
+        Mix and re-combine the heads’ features
+        Technically, you could omit this layer; 
+        the tensor shape would still work. But then the heads’ outputs are only concatenated, 
+        and that attention layer has no learned step to mix their channels. 
+        The projection is part of the standard multi-head attention design.
+        """
+        out = self.output_projection(out)
+        return (out, attention_probs)
 
 class MLP(nn.Module):
     def __init__(self, config):
@@ -117,17 +116,17 @@ class MLP(nn.Module):
 class TransformerBlock(nn.Module):
     def __init__(self, config):
         super().__init__()
+        
         self.attention = MultiHeadAttention(config)
         self.mlp = MLP(config)
         self.norm1 = nn.LayerNorm(config["hidden_size"])
         self.norm2 = nn.LayerNorm(config["hidden_size"])
 
     def forward(self, x):
-        x = self.norm1(x)
-        attn_out, attn_probs = self.attention(x)
+        attn_out, attn_probs = self.attention(self.norm1(x))
         x = x + attn_out # Residual connection after attention layer
-        x = self.norm2(x)
-        x = x + self.mlp(x) # Residual connection after feed-forward layer
+        mlp_output = self.mlp(self.norm2(x)) # Residual connection after feed-forward layer
+        x = x + mlp_output
         return x, attn_probs
 
 class Encoder(nn.Module):
@@ -187,34 +186,3 @@ class ViTForClassification(nn.Module):
                 mean=0.0,
                 std=self.config["initializer_range"],
             ).to(module.cls_token.dtype)
-        elif isinstance(module, TransformerBlock):
-            module.attention.query.weight.data = nn.init.trunc_normal_(
-                module.attention.query.weight.data.to(torch.float32),
-                mean=0.0,
-                std=self.config["initializer_range"],
-            ).to(module.attention.query.weight.dtype)
-            module.attention.key.weight.data = nn.init.trunc_normal_(
-                module.attention.key.weight.data.to(torch.float32),
-                mean=0.0,
-                std=self.config["initializer_range"],
-            ).to(module.attention.key.weight.dtype)
-            module.attention.value.weight.data = nn.init.trunc_normal_(
-                module.attention.value.weight.data.to(torch.float32),
-                mean=0.0,
-                std=self.config["initializer_range"],
-            ).to(module.attention.value.weight.dtype)
-            module.attention.out.weight.data = nn.init.trunc_normal_(
-                module.attention.out.weight.data.to(torch.float32),
-                mean=0.0,
-                std=self.config["initializer_range"],
-            ).to(module.attention.out.weight.dtype)
-            module.attention.value.weight.data = nn.init.trunc_normal_(
-                module.attention.value.weight.data.to(torch.float32),
-                mean=0.0,
-                std=self.config["initializer_range"],
-            ).to(module.attention.value.weight.dtype)
-            module.attention.out.weight.data = nn.init.trunc_normal_(
-                module.attention.out.weight.data.to(torch.float32),
-                mean=0.0,
-                std=self.config["initializer_range"],
-            ).to(module.attention.out.weight.dtype)

@@ -8,7 +8,6 @@ def prepare_data(batch_size=32, num_workers=2):
     """
     train_transform = transforms.Compose(
         [transforms.ToTensor(),
-         transforms.Resize(32, 32),
          transforms.RandomHorizontalFlip(p=0.5),
          transforms.RandomResizedCrop((32, 32), scale=(0.8, 1.0), ratio=(0.75, 1.3333333333333333), interpolation=2),
          transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
@@ -20,7 +19,6 @@ def prepare_data(batch_size=32, num_workers=2):
 
     test_transform = transforms.Compose(
         [transforms.ToTensor(),
-         transforms.Resize(32, 32),
          transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
     testset = torchvision.datasets.CIFAR10(root='./data', train=False,
