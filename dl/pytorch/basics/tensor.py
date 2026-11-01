@@ -16,6 +16,13 @@ x = torch.tensor([5.5, 3])
 print(x.shape)
 print(x.size())
 
+#Named tensor
+img_t = torch.randn(3, 5, 5) # shape [channels, rows, columns]
+weights = torch.tensor([0.2126, 0.7152, 0.0722])
+
+x = torch.tensor([5.5, 3], name="x")
+print(x)
+
 #ops
 x = torch.ones(5,3)
 y = torch.rand(5,3)

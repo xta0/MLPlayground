@@ -1,0 +1,9 @@
+.ruff_cache
+__pycache__/
+*.py[cod]
+models/
+# Generated training checkpoints and run configuration
+checkpoints/
+data/
+results/
+runs/
