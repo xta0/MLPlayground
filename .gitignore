@@ -108,3 +108,6 @@ venv.bak/
 *.mlpackage
 
 *.safetensors
+
+# Local sprite training dataset
+/diffusion/sdxl/ddpm/sprites_1788_16x16.npy
