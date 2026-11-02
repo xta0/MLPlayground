@@ -67,6 +67,26 @@ uv run python src/train.py \
 
 Use a unique experiment name per run. Reusing names can overwrite checkpoints and mix TensorBoard events. There is currently no resume command or learning rate scheduler.
 
+## Evaluate the best checkpoint
+
+After training `vit-run-01`, evaluate its best checkpoint on the CIFAR-10 test set:
+
+```bash
+uv run python src/main.py \
+  --run experiments/vit-run-01/model_best.pt
+```
+
+The command loads `config.json` from the checkpoint's directory, selects CUDA if available (otherwise CPU), and evaluates only the first test batch. It prints a `(prediction, label)` class-name pair for each image in that batch followed by first-batch accuracy. The default evaluation batch size is 32; this accuracy does not represent the full test set. To choose the device and batch size explicitly:
+
+```bash
+uv run python src/main.py \
+  --run experiments/vit-run-01/model_best.pt \
+  --device cpu \
+  --batch-size 256
+```
+
+Replace `vit-run-01` with your experiment name. Keep the experiment's `config.json` alongside its checkpoint; it must describe the architecture used to train those weights.
+
 ## Monitor with TensorBoard
 
 Start this in another terminal from the project root:

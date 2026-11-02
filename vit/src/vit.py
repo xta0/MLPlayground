@@ -60,6 +60,7 @@ class AttentionHead(nn.Module):
         K = self.key(x) # (1, 65, 12) -> (1, 65, 12), Wk -> 12x12
         V = self.value(x) # (1, 65, 12) -> (1, 65, 12), Wv -> 12x12
         attention_scores = torch.matmul(Q, K.transpose(-2, -1)) / (self.head_size ** 0.5) # (1, 65, 12) x (1, 12, 65) -> (1, 65, 65)
+        # softmax along the columns (last dimension) of the 65x65 2D attention score matrix
         attention_probs = torch.softmax(attention_scores, dim=-1)
         out = torch.matmul(attention_probs, V) # (1, 65, 65) x (1, 65, 12) -> (1, 65, 12)
         return (out, attention_probs)
@@ -96,6 +97,7 @@ class MultiHeadAttention(nn.Module):
         The projection is part of the standard multi-head attention design.
         """
         out = self.output_projection(out)
+        attention_probs = torch.stack(attention_probs, dim=1) # (1, num_heads, 65, 65)
         return (out, attention_probs)
 
 class MLP(nn.Module):
