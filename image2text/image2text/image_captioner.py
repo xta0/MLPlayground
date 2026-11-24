@@ -132,27 +132,42 @@ class VisionDecoder(nn.Module):
         x = self.fc_out(x)
         return x
 
+class DinoV2Encoder(nn.Module):
+    def __init__(self, hidden_size):
+        super().__init__()
+        self.backbone = torch.hub.load("facebookresearch/dinov2:main", "dinov2_vits14", trust_repo=True)
+        self.backbone.requires_grad_(False).eval()
+        self.projection = nn.Linear(self.backbone.embed_dim, hidden_size)
+
+    def train(self, mode=True):
+        super().train(mode)
+        self.backbone.eval()
+        return self
+
+    def forward(self, images):
+        with torch.no_grad():
+            patches = self.backbone.forward_features(images)["x_norm_patchtokens"]
+        return self.projection(patches)
+
+
 class ImageCaptioner(nn.Module):
     def __init__(self, config: Config, num_emb: int):
-        self.config = config
-        image_size = config.image_size
-        patch_size = config.patch_size
-        hidden_size = config.hidden_size
-        num_attention_heads = config.num_attention_heads
-        num_encoder_transformer_blocks = config.encoder_transformer_blocks
-        num_decoder_transformer_blocks = config.decoder_transformer_blocks
-        channels_in = config.channels
         super().__init__()
-        self.vision_encoder = VisionEncoder(image_size=image_size, 
-                                            input_channels=channels_in, 
-                                            hidden_size=hidden_size, 
-                                            patch_size=patch_size, 
-                                            num_transformer_blocks=num_encoder_transformer_blocks, 
-                                            num_attention_heads=num_attention_heads)
-        self.vision_decoder = VisionDecoder(num_emb=num_emb, 
-                                            hidden_size=hidden_size, 
-                                            num_transformer_blocks=num_decoder_transformer_blocks, 
-                                            num_attention_heads=num_attention_heads)
+        self.config = config
+        if config.encoder == "dinov2":
+            self.vision_encoder = DinoV2Encoder(config.hidden_size)
+        else:
+            self.vision_encoder = VisionEncoder(
+                image_size=config.image_size, input_channels=config.channels,
+                hidden_size=config.hidden_size, patch_size=config.patch_size,
+                num_transformer_blocks=config.encoder_transformer_blocks,
+                num_attention_heads=config.num_attention_heads,
+            )
+        self.vision_decoder = VisionDecoder(
+            num_emb=num_emb, hidden_size=config.hidden_size,
+            num_transformer_blocks=config.decoder_transformer_blocks,
+            num_attention_heads=config.num_attention_heads,
+        )
 
     def forward(self, image, target_seq, atten_mask=None):
         # MultiheadAttention uses True for keys to ignore.

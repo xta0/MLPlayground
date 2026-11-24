@@ -106,12 +106,12 @@ def prepare_data(file_path=FLICKER_8K, *, evaluation_split="test", legacy_vocab=
 
 
 class Flickr(Dataset):
-    def __init__(self, image_paths, image_captions, vocab):
+    def __init__(self, image_paths, image_captions, vocab, image_size=128):
         self.image_paths = image_paths
         self.image_captions = image_captions
         self.vocab = vocab
         self.max_caption_length = MAX_CAPTION_LENGTH
-        self.image_size = 128
+        self.image_size = image_size
         self.image_transform = self._construct_image_transform(self.image_size)
         self.data = self._group_image_captions_pairs()
         self.data_size = len(self.data)

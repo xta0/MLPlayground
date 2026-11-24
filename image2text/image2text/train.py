@@ -1,3 +1,4 @@
+import argparse
 import torch
 import torch.nn as nn
 from tqdm import tqdm
@@ -12,7 +13,7 @@ from torch.utils.tensorboard import SummaryWriter
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-def train(model, train_loader, val_loader, device, pad_id, epochs=50):
+def train(model, train_loader, val_loader, device, pad_id, epochs=50, best_checkpoint=BEST_CHECKPOINT):
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
     use_amp = device.type == "cuda"
     scaler = torch.amp.GradScaler(device.type, enabled=use_amp)
@@ -101,11 +102,11 @@ def train(model, train_loader, val_loader, device, pad_id, epochs=50):
                 writer.add_scalar("loss/val", val_loss, epoch)
                 message += f", validation loss {val_loss:.4f}"
                 if val_loss < best_val_loss:
-                    BEST_CHECKPOINT.parent.mkdir(parents=True, exist_ok=True)
-                    with TemporaryDirectory(dir=BEST_CHECKPOINT.parent) as directory:
-                        temporary = Path(directory) / BEST_CHECKPOINT.name
+                    best_checkpoint.parent.mkdir(parents=True, exist_ok=True)
+                    with TemporaryDirectory(dir=best_checkpoint.parent) as directory:
+                        temporary = Path(directory) / best_checkpoint.name
                         torch.save(model.state_dict(), temporary)
-                        temporary.replace(BEST_CHECKPOINT)
+                        temporary.replace(best_checkpoint)
                     best_val_loss = val_loss
                     message += " (saved best checkpoint)"
 
@@ -116,7 +117,8 @@ def train(model, train_loader, val_loader, device, pad_id, epochs=50):
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
         torch.save(model.state_dict(), checkpoint)
 
-def main():
+def main(encoder="custom"):
+    config = Config.for_encoder(encoder)
     train_image_paths, train_image_captions, val_image_paths, val_image_captions, vocab = prepare_data(
         evaluation_split="val"
     )
@@ -124,24 +126,24 @@ def main():
     print("Train image captions:", len(train_image_captions))
     print("Validation images:", len(val_image_paths))
     print("Vocab size:", len(vocab))
-    train_set = Flickr(train_image_paths, train_image_captions, vocab)
+    train_set = Flickr(train_image_paths, train_image_captions, vocab, image_size=config.image_size)
     train_loader = DataLoader(train_set, 
                               batch_size=128, 
                               shuffle=True)
-    val_set = Flickr(val_image_paths, val_image_captions, vocab)
+    val_set = Flickr(val_image_paths, val_image_captions, vocab, image_size=config.image_size)
     val_loader = DataLoader(val_set, batch_size=128, shuffle=False)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("training on device:", device)
     model = ImageCaptioner(
-        config=Config(),
+        config=config,
         num_emb=len(vocab)
     ).to(device)
     num_model_params = 0
     for param in model.parameters():
         num_model_params += param.numel()
     print("Number of model parameters:", num_model_params) # 9545219 ~10 million
-    train(model, train_loader, val_loader, device, pad_id=vocab[PAD_TOKEN])
+    train(model, train_loader, val_loader, device, pad_id=vocab[PAD_TOKEN], best_checkpoint=config.best_checkpoint)
 
 
 def _inspect_sample(sample):
@@ -158,4 +160,6 @@ def _inspect_sample(sample):
     print(patches.shape) # torch.Size([1, 256, 192])
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Train the Flickr8k image captioner.")
+    parser.add_argument("--encoder", choices=("custom", "dinov2"), default="custom")
+    main(parser.parse_args().encoder)

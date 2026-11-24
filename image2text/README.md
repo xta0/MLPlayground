@@ -32,7 +32,18 @@ uv run -m image2text.main --split train
 
 Training images are the default. Use `--split test` to sample held-out images. Inference loads `checkpoints/best.pth` when available and falls back to the older `checkpoints/model.pth` with its original vocabulary. It writes eight predicted and ground-truth caption comparisons to `results/`. Each run replaces the previous batch. The loader samples image–caption pairs, so the same image can appear with different reference captions.
 
+The decoder samples each word by default. To choose the highest-scoring word at each step on test images, run `uv run -m image2text.main --split test --decode greedy`.
+
 ## Architecture
+
+To try the frozen DINOv2 ViT-S/14 encoder with the caption decoder, select it for both training and inference.
+
+```sh
+uv run -m image2text.train --encoder dinov2
+uv run -m image2text.main --encoder dinov2 --split test --decode greedy
+```
+
+This option loads the pretrained weights through PyTorch Hub, resizes each source image to 224 × 224, and projects 256 patch vectors from 384 to 192 features. Training updates the projection and caption decoder and saves the best validation checkpoint to `checkpoints/best_dinov2.pth`. The default encoder is `custom`.
 
 - **Vision encoder** splits a 128 × 128 RGB image into 256 non-overlapping 8 × 8 patches. It projects each patch to a 192-dimensional embedding, adds a learned positional embedding, and processes the sequence with six Transformer blocks using eight attention heads each.
 - **Caption decoder** embeds caption tokens and adds sinusoidal positional embeddings. Its six Transformer blocks use eight-head causal self-attention over the caption and cross-attention over the encoded image patches. A linear layer produces a score for each vocabulary token at each caption position.
