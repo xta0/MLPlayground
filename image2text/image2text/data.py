@@ -61,21 +61,27 @@ UNK_TOKEN = "<unk>"
 
 MAX_CAPTION_LENGTH = 50
 
-def prepare_data(file_path=FLICKER_8K):
+def prepare_data(file_path=FLICKER_8K, *, evaluation_split="test", legacy_vocab=False):
+    """Return training data, the requested held-out split, and their shared token IDs."""
+    if evaluation_split not in {"val", "test"}:
+        raise ValueError("evaluation_split must be 'val' or 'test'")
     with open(file_path, "r") as f:
         data = json.load(f)
     train_image_paths = []
     train_image_captions = []
-    test_image_paths = []
-    test_image_captions = []
+    eval_image_paths = []
+    eval_image_captions = []
 
     word_freq = Counter()
 
     for image in data["images"]:
+        split = image["split"]
+        training_image = split in {"train", "restval"}
         caption_tokens = []
         for sentence in image["sentences"]:
             tokens = sentence["tokens"]
-            word_freq.update(tokens)
+            if legacy_vocab or training_image:
+                word_freq.update(tokens)
             if len(tokens) <= MAX_CAPTION_LENGTH:
                 caption_tokens.append(tokens)
         if len(caption_tokens) == 0:
@@ -83,14 +89,12 @@ def prepare_data(file_path=FLICKER_8K):
 
         image_name = image["filename"]
         image_path = str(DATA_DIR / "Images" / image_name)
-        split = image["split"]
-
-        if split in {"train", "val", "restval"}:
+        if training_image:
             train_image_paths.append(image_path)
             train_image_captions.append(caption_tokens)
-        elif split in {"test"}:
-            test_image_paths.append(image_path)
-            test_image_captions.append(caption_tokens)
+        elif split == evaluation_split:
+            eval_image_paths.append(image_path)
+            eval_image_captions.append(caption_tokens)
 
     words = [w for w in word_freq.keys() if word_freq[w] > 0]
     vocab = {w: i + 4 for i, w in enumerate(words)}
@@ -98,7 +102,7 @@ def prepare_data(file_path=FLICKER_8K):
     vocab[START_TOKEN] = START_IDX
     vocab[END_TOKEN] = END_IDX
     vocab[UNK_TOKEN] = UNK_IDX
-    return train_image_paths, train_image_captions, test_image_paths, test_image_captions, vocab
+    return train_image_paths, train_image_captions, eval_image_paths, eval_image_captions, vocab
 
 
 class Flickr(Dataset):

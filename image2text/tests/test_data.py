@@ -6,9 +6,9 @@ from pathlib import Path
 from PIL import Image
 from torch.utils.data import DataLoader
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from data import END_IDX, PAD_IDX, START_IDX, Flickr
+from image2text.data import END_IDX, PAD_IDX, START_IDX, Flickr
 
 
 class FlickrCaptionLengthTests(unittest.TestCase):
